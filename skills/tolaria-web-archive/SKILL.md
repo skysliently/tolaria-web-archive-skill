@@ -27,7 +27,7 @@ when_to_use: Use when the user asks to 保存/存档/收藏网页或文章 到 T
 ## Inputs
 
 - 目标 URL（必须）
-- vault：先 `mcp__tolaria__list_vaults` 确认（本机当前唯一 vault 为 `/Users/yunke/tolaria`）
+- vault：先 `mcp__tolaria__list_vaults` 确认 vault 路径（本 skill 开发环境为 `~/tolaria`，以实际返回为准）
 - 用户指定标签（可选，原词保留）
 
 依赖：`python3` + `lxml`（`python3 -m pip install lxml`）；agent-browser（缺失则 `npm i -g agent-browser && agent-browser install`）。
