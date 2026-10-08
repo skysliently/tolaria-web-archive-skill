@@ -1,5 +1,7 @@
 # tolaria-web-archive-skill
 
+**[中文](README.md)** | **[English](README.en.md)**
+
 把任意网页**原封不动、带图、无损**归档进 [Tolaria](https://github.com/refactoringhq/tolaria) 笔记库的 ZCode Skill。
 
 给它一个 URL,它会:用真实浏览器渲染页面(人机验证由用户介入,绝不代破解)→ 本地化全部图片与原始 DOM → 生成离线自包含快照与逐字 Markdown 转写 → 通过 Tolaria MCP 写入一篇带 AI 摘要、元数据表与标签的笔记。产物按文档分子目录结构化存放,笔记在 Tolaria 应用内可完整查看(图文闭环)。
@@ -46,7 +48,7 @@ agent-browser --version          # 命令不存在 → 检查 PATH
 # ZCode 会话中调用 mcp__tolaria__list_vaults,应返回你的 vault 列表
 ```
 
-## 安装
+## 安装(ZCode)
 
 ```bash
 git clone git@github.com:skysliently/tolaria-web-archive-skill.git
@@ -54,7 +56,7 @@ mkdir -p ~/.agents/skills
 cp -R skills/tolaria-web-archive ~/.agents/skills/
 ```
 
-`~/.agents/skills/` 是 ZCode 的用户级 skill 目录(本 skill 实际安装位置);项目级安装则放入 `<project>/.zcode/skills/`。重启会话后在可用 skill 列表中可见 `tolaria-web-archive`。
+`~/.agents/skills/` 是 ZCode 的用户级 skill 目录(本 skill 实际安装位置);项目级安装则放入 `<project>/.zcode/skills/`。重启会话后在可用 skill 列表中可见 `tolaria-web-archive`。Claude Code / OpenCode / Codex 用户见下文[「在其他 Agent 中使用」](#在其他-agent-中使用)。
 
 ## 使用
 
@@ -64,6 +66,51 @@ ZCode 会话中任一方式触发:
 - 自然语言:"把这个网页存到 Tolaria" / "归档这篇文章,要带图无损"
 
 人机验证协议:页面出现验证码 / 登录墙时,skill 会保持**用户可见的浏览器窗口**并请你本人完成验证;你确认后再继续抓取。skill 不自动绕过任何验证。非 HTML 目标(PDF/视频/音频)不在范围内。
+
+## 在其他 Agent 中使用
+
+本 skill 不绑定 ZCode。它的**硬依赖只有两个**:能执行 Shell 命令(Bash)的智能体 + 已配置的 Tolaria MCP;agent-browser 是独立 CLI,与智能体无关。差异只在 skill 的发现机制与 MCP 配置方式:
+
+| Agent | skill 机制 | 安装位置 | 触发方式 |
+|---|---|---|---|
+| **ZCode** | 原生 Skill | `~/.agents/skills/` | `/tolaria-web-archive <url>` 或自然语言 |
+| **Claude Code** | 原生 Agent Skills(同款 SKILL.md 格式) | `~/.claude/skills/` | `/tolaria-web-archive <url>` 或自然语言 |
+| **OpenCode** | SKILL.md(Anthropic skills 格式兼容) | `~/.config/opencode/skill/` 或项目 `.opencode/skill/` | 自然语言(按 SKILL.md 的 description 匹配) |
+| **Codex CLI** | 无 skills 机制,用 AGENTS.md 路由 | 任意位置(如 `~/skills/`) | 在 AGENTS.md 声明后自然语言触发 |
+
+> 各工具的目录约定可能随版本演进,以上以各自官方文档为准。
+
+**Claude Code**(本仓库开发时实测的接入方式):
+
+```bash
+# 1. 安装 skill
+cp -R skills/tolaria-web-archive ~/.claude/skills/
+
+# 2. 配置 Tolaria MCP(user 级,所有项目可用)
+claude mcp add tolaria --scope user --env WS_UI_PORT=9711 -- \
+  node /Applications/Tolaria.app/Contents/Resources/mcp-server/index.js
+
+# 3. 会话中确认 mcp__tolaria__* 工具可见后即可使用
+```
+
+**OpenCode**:把 `skills/tolaria-web-archive/` 整个目录拷入其 skill 目录;Tolaria MCP 在 `opencode.json` 的 `mcp` 字段配置(同样的 stdio command + `WS_UI_PORT` 环境变量)。
+
+**Codex CLI**:无原生 skills,两种等效用法任选——
+- 全局路由(推荐):在 `~/.codex/AGENTS.md` 加一行规则,如"当用户要求保存/归档网页到 Tolaria 时,先完整阅读 `~/skills/tolaria-web-archive/SKILL.md` 并严格按其流程执行";
+- 单次使用:对话中直接说"阅读 `path/to/SKILL.md` 并照此归档 <url>"。
+MCP 写入 `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.tolaria]
+command = "node"
+args = ["/Applications/Tolaria.app/Contents/Resources/mcp-server/index.js"]
+
+[mcp_servers.tolaria.env]
+WS_UI_PORT = "9711"
+```
+
+**跨 agent 通用提示**:SKILL.md 正文引用的工具名(`mcp__tolaria__*`、`mcp__web_reader__webReader`)是 ZCode 的 MCP 工具命名形态;其他 agent 中同一 server 的工具名前缀可能不同(如 Claude Code 中亦为 `mcp__tolaria__*`),以各自 MCP 客户端注入的工具列表为准——skill 流程不受影响,只是名称对应关系按实际工具清单理解。
+
 
 ## 相对上游的四项修复(踩坑记录)
 
