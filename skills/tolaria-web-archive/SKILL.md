@@ -30,13 +30,16 @@ when_to_use: Use when the user asks to 保存/存档/收藏网页或文章 到 T
 - vault：先 `mcp__tolaria__list_vaults` 确认 vault 路径（本 skill 开发环境为 `~/tolaria`，以实际返回为准）
 - 用户指定标签（可选，原词保留）
 
-依赖：`python3` + `lxml`（`python3 -m pip install lxml`）；agent-browser（缺失则 `npm i -g agent-browser && agent-browser install`）。
+依赖：`python3` + `lxml`（`python3 -m pip install lxml`）；agent-browser（缺失则 `npm i -g agent-browser && agent-browser install`）。建议在 shell 配置兜底 `export AGENT_BROWSER_IDLE_TIMEOUT_MS=600000`——即使某条路径漏了 close，浏览器空闲 10 分钟后也会自动退出（对新启动的 daemon 会话生效）。
 
 ## 阶段 1 — 浏览器渲染（主路径，禁止跳过）
 
 首选 `agent-browser` CLI 的 **headed 模式**（窗口用户可见可操作）；agent-browser 不可用时改用 browser-use 插件（IAB，见第 5 步）。
 
-1. `agent-browser --headed open <url> && agent-browser wait --load networkidle`
+1. **幂等启动**：daemon 是全局单例且跨会话存活，若它此前以 headless 启动，`--headed` 会被静默忽略（CLI 仅给一行 warning），人机校验介入协议随之失效。先清掉已有会话再打开，保证 headed 生效：
+   ```bash
+   agent-browser close --all 2>/dev/null; agent-browser --headed open <url> && agent-browser wait --load networkidle
+   ```
 2. **人机校验检查**：`agent-browser get title` + `agent-browser snapshot`（必要时截图）。命中任一 → 停下请用户介入：
    - 验证挑战特征："Just a moment"、"验证码"、"人机验证"、滑块、复选框挑战
    - 登录墙、公众号"环境异常"提示页
@@ -67,6 +70,7 @@ python3 scripts/archive_page.py --from-file /tmp/web2tolaria.html "<vault>" "<�
 - **图片按真实格式落盘（硬要求）**：脚本下载后按魔数嗅探真实格式，以 `imgNN.<真实扩展名>` 落盘——PNG→`.png`、JPEG→`.jpg`、GIF→`.gif`，WebP 经 `sips` 转码为真 PNG（Tolaria 对 webp 的支持未验证，PNG 是已验证可渲染的安全格式；sips 失败则保留 `.webp`）。旧版脚本按 URL 查询串猜扩展名，会产出「`.png` 扩展名 + JPEG/WebP 字节」的错标文件——**Tolaria 预览按扩展名加载，错标图在应用内全部不显示**（浏览器靠内容嗅探不受影响，属潜伏缺陷，归档时无任何报错）。存量错标文件：`file` 核对后用 `sips -s format png` 转码为真 PNG（文件名与笔记引用均不变），原件备份到 /tmp。
 - 图片多的页面脚本可能跑 1-4 分钟，Bash 调用给足超时（≥240s）。
 - meta 中 `failed_images` 非空 → 从浏览器会话取 cookie（`agent-browser eval 'document.cookie'`）重跑并加 `--cookie "<cookie>"`；仍失败 → 失败图片保留远程 URL 引用，笔记元数据注明，不阻塞。
+- **释放浏览器（硬要求，走浏览器通道时不可省略）**：归档脚本跑完（含 failed_images 的 cookie 重跑）后执行 `agent-browser close`。agent-browser 的契约是浏览器常驻直到调用方显式 close——归档后不关，headed Chrome 会带着目标页常驻桌面，多次归档后缓存与内存持续累积，是浏览器「假死」的直接根源。阶段 3-5 均不再需要浏览器，此步之后不要再发起 agent-browser 命令。
 - 两个浏览器通道都不可用才降级直抓：`python3 scripts/archive_page.py "<url>" "<vault>"`（退出码 2 = 必须回到浏览器路径）。
 - 全部通道失败 → `mcp__web_reader__webReader` 只能得 Markdown，标 `access: degraded`，向用户说明无损层缺失。
 
@@ -113,6 +117,7 @@ tags: [web-archive, <站点标签>, <内容标签…>, <用户指定标签>]
 - **本地闭环**：笔记正文图片引用全部指向 `attachments/<base>/` 内的本地文件，无远程 http 图源（`failed_images` 对应的远程占位引用是唯一例外，须在元数据表注明）。判定标准是**应用内可渲染**，不只是路径存在——引用闭合 ≠ 图片可见
 - tags 含 `web-archive`；`captured` / `url` / `source` 齐全
 - 经用户介入过验证 → 元数据表注明"用户完成人机验证后抓取"
+- **浏览器已释放**：走浏览器通道时 `agent-browser close` 已在阶段 2 执行（校验方式：任一 agent-browser 命令应报无活跃会话，或进程中无残留 Chrome）
 - 向用户报告**双路径**：附件子目录 `attachments/<base>/` 的产物清单 + vault 笔记路径
 
 ## 边界
