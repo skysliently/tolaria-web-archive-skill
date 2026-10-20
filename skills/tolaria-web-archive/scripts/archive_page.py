@@ -422,7 +422,8 @@ def main():
     meta['image_originals'] = [img_urls[i] for i in range(len(img_urls)) if names[i]]
     meta['failed_images'] = failed
     meta['needs_enrichment'] = True
-    meta['suggested_note'] = date[:4] + '/' + date + '-' + slugify(m.get('title') or base, 60) + '.md'
+    # note stem must equal the attachments dir (incl. --out-name and the dedup token)
+    meta['suggested_note'] = date[:4] + '/' + dir_name + '.md'
     meta_path = os.path.join(ddir, 'meta.json')
     open(meta_path, 'w', encoding='utf-8').write(json.dumps(meta, ensure_ascii=False, indent=2))
     print(json.dumps(meta, ensure_ascii=False, indent=2))

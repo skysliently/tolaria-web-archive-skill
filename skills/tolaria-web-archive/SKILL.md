@@ -62,8 +62,10 @@ when_to_use: Use when the user asks to 保存/存档/收藏网页或文章 到 T
 ## 阶段 2 — 脚本归档
 
 ```bash
-python3 scripts/archive_page.py --from-file /tmp/web2tolaria.html "<vault>" "<最终URL>"
+python3 scripts/archive_page.py --from-file /tmp/web2tolaria.html "<vault>" "<最终URL>" --out-name <发布日期>-<英文slug>
 ```
+
+**`--out-name` 必传**：脚本默认从标题派生 slug 时会剥掉 CJK，中文标题会退化成 `2026-10-16-ai` 这类无意义名字。按库内规范给描述性英文 kebab slug（如 `2026-10-17-how-ai-bubble-bursts`），日期取文章发布日；`base`（附件目录名）与 `suggested_note`（笔记文件名）均由它派生，天然同名。
 
 产出全部落在 `<vault>/attachments/<base>/` 子目录（`<base>` 取自 meta.json 的 `base` 字段，与笔记文件名同名）。幂等（同 URL 重跑按目录复用已有文件，不产生冗余；meta.json 已存在时可直接复用进入阶段 3）；若同名目录已被**不同 URL** 的归档占用，脚本自动追加来源 token 去重为 `<base>-<token>`。meta.json 含 `image_originals`（每张本地图片对应的原图 CDN 地址，与 `files.images` 顺序对齐）和 `needs_enrichment: true`（确定性存档完成、语义层待补齐的握手信号）。
 
