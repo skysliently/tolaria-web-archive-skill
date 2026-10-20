@@ -133,3 +133,7 @@ WS_UI_PORT = "9711"
 - macOS 26(darwin 25.5.0)arm64 · ZCode · GLM-5.3-Flash
 - Tolaria(MCP 连接本地 vault)· agent-browser(Chrome 154.0.8037.92)
 - 实测通过:微信公众号文章、anthropic.com 研究报告(均无需人机验证);含验证墙站点的介入协议见 SKILL.md
+
+## 许可证
+
+本项目基于 [MIT License](LICENSE) 开源。

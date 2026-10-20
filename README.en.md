@@ -132,3 +132,7 @@ Core principle: the acceptance bar is **renders inside the app**, not "path exis
 - macOS 26 (darwin 25.5.0) arm64 · ZCode · GLM-5.3-Flash
 - Tolaria (MCP to a local vault) · agent-browser (Chrome 154.0.8037.92)
 - Verified live: a WeChat official-account article and an anthropic.com research report (both without human verification); for walled sites see the intervention protocol in SKILL.md
+
+## License
+
+Released under the [MIT License](LICENSE).
